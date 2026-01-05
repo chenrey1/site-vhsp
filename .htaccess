@@ -1,0 +1,37 @@
+# CodeIgniter .htaccess
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # deploy.php dosyasına erişimi koru (sadece belirli IP'lerden veya token ile)
+    # Not: deploy.php'de zaten token kontrolü var, bu ekstra güvenlik için
+    
+    # deploy.log dosyasına erişimi engelle
+    <Files "deploy.log">
+        Order allow,deny
+        Deny from all
+    </Files>
+
+    # .git klasörüne erişimi engelle
+    RedirectMatch 404 /\.git
+
+    # index.php'yi gizle
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php/$1 [L]
+</IfModule>
+
+# Güvenlik Headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# PHP ayarları
+<IfModule mod_php7.c>
+    php_value upload_max_filesize 10M
+    php_value post_max_size 10M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+</IfModule>

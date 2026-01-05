@@ -1,0 +1,4 @@
+Bu dosya otomatik deployment testi için oluşturuldu.
+Tarih: 2026-01-05
+Test başarılı! 🎉
+

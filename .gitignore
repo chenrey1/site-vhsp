@@ -1,0 +1,53 @@
+# CodeIgniter
+application/config/database.php
+application/config/config.php
+application/logs/*
+!application/logs/index.html
+application/cache/*
+!application/cache/index.html
+
+# Sensitive files
+*.sql
+*.env
+.env
+.env.local
+.env.production
+
+# OS Files
+.DS_Store
+Thumbs.db
+__MACOSX/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Composer
+/vendor/
+composer.lock
+
+# Node modules (if any)
+node_modules/
+npm-debug.log
+
+# Uploads (optional - uncomment if you don't want to track uploads)
+# /assets/uploads/
+# /uploads/
+
+# Temporary files
+*.tmp
+*.log
+*.cache
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# ZIP files (except vendor packages)
+*.zip
+!vendor/**/*.zip
+

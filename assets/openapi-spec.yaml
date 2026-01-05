@@ -1,0 +1,737 @@
+openapi: 3.0.0
+info:
+  title: {{SITE_NAME}} API
+  description: |
+
+  version: 1.0.0
+
+servers:
+  - url: {{API_URL}}
+    description: {{SITE_NAME}} API Sunucusu
+
+tags:
+  - name: Bakiye
+    description: Kullanıcı bakiyesi ile ilgili operasyonlar
+  - name: Ürünler
+    description: Ürün listeleme ve detay operasyonları
+  - name: Kategoriler
+    description: Kategori listeleme ve detay operasyonları
+  - name: Satın Alma
+    description: Ürün satın alma operasyonları
+
+paths:
+  /balance:
+    get:
+      tags:
+        - Bakiye
+      summary: Kullanıcı bakiyesini al
+      description: |
+        Bu endpoint, mevcut kimlik bilgileriyle giriş yapmış kullanıcının bakiyesini döndürür.
+        
+        ### Kullanım Örneği (PHP)
+        ```php
+        $email = 'kullanici@email.com';
+        $password = 'sifre';
+        $credentials = base64_encode($email . ':' . $password);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "{{API_URL}}/balance");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'Authorization: Basic ' . $credentials
+        ));
+        $response = curl_exec($ch);
+        curl_close($ch);
+        $data = json_decode($response, true);
+        echo "Bakiye: " . $data['balance'];
+        ```
+      security:
+        - BasicAuth: []
+      responses:
+        '200':
+          description: Başarılı yanıt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    description: İşlem durumu (true/false)
+                  balance:
+                    type: number
+                    format: float
+                    description: Kullanıcının mevcut bakiyesi
+              example:
+                status: true
+                balance: 1250.75
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /products:
+    get:
+      tags:
+        - Ürünler
+      summary: Tüm aktif ürünleri listele
+      description: |
+        Bu endpoint, sistemdeki tüm aktif ürünlerin listesini döndürür.
+        
+        ### Kullanım Örneği (PHP)
+        ```php
+        $email = 'kullanici@email.com';
+        $password = 'sifre';
+        $credentials = base64_encode($email . ':' . $password);
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "{{API_URL}}/products");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'Authorization: Basic ' . $credentials
+        ));
+        $response = curl_exec($ch);
+        curl_close($ch);
+        $data = json_decode($response, true);
+        foreach ($data['products'] as $product) {
+            echo "Ürün: " . $product['name'] . ", Fiyat: " . $product['price'] . "\n";
+        }
+        ```
+      security:
+        - BasicAuth: []
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Ürün adı veya açıklamasında arama yapar
+        - in: query
+          name: category_id
+          schema:
+            type: integer
+          description: Belirli bir kategorideki ürünleri filtreler
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Sayfa numarası
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Sayfa başına sonuç sayısı
+      responses:
+        '200':
+          description: Başarılı yanıt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    description: İşlem durumu (true/false)
+                  total:
+                    type: integer
+                    description: Toplam ürün sayısı
+                  page:
+                    type: integer
+                  pageSize:
+                    type: integer
+                  products:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+              example:
+                status: true
+                total: 2
+                page: 1
+                pageSize: 10
+                products:
+                  - id: 1
+                    name: "1000 Valorant Points"
+                    price: 100.00
+                    description: "1000 Valorant Points"
+                    isActive: true
+                    category_id: 1
+                  - id: 2
+                    name: "3000 Valorant Points"
+                    price: 250.00
+                    description: "3000 Valorant Points"
+                    isActive: true
+                    category_id: 1
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /products/{id}:
+    get:
+      tags:
+        - Ürünler
+      summary: Ürün detayını getir
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Ürün ID'si
+      security:
+        - BasicAuth: []
+      responses:
+        '200':
+          description: Başarılı yanıt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    description: İşlem durumu (true/false)
+                  product:
+                    $ref: '#/components/schemas/Product'
+              example:
+                status: true
+                product:
+                  id: 1
+                  name: "1000 Valorant Points"
+                  price: 100.00
+                  description: "1000 Valorant Points"
+                  isActive: true
+                  category_id: 1
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: Ürün bulunamadı
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                  message:
+                    type: string
+              example:
+                status: false
+                message: "Belirtilen ID'ye sahip ürün bulunamadı"
+        '500':
+          description: Sunucu hatası
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                  message:
+                    type: string
+              example:
+                status: false
+                message: "Ürün detayı alınırken bir hata oluştu"
+
+  /categories:
+    get:
+      tags:
+        - Kategoriler
+      summary: Tüm aktif kategorileri listele
+      description: |
+        Bu endpoint, sistemdeki tüm aktif kategorilerin listesini döndürür.
+        
+        ### Kullanım Örneği (PHP)
+        ```php
+        $email = 'kullanici@email.com';
+        $password = 'sifre';
+        $credentials = base64_encode($email . ':' . $password);
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "{{API_URL}}/categories");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'Authorization: Basic ' . $credentials
+        ));
+        $response = curl_exec($ch);
+        curl_close($ch);
+        $data = json_decode($response, true);
+        foreach ($data['categories'] as $category) {
+            echo "Kategori: " . $category['name'] . "\n";
+        }
+        ```
+      security:
+        - BasicAuth: []
+      parameters:
+        - in: query
+          name: name
+          schema:
+            type: string
+          description: Kategori adına göre arama yapar
+        - in: query
+          name: categoryTree
+          schema:
+            type: boolean
+            default: false
+          description: true olarak gönderilirse, kategorileri ağaç yapısında döndürür
+      responses:
+        '200':
+          description: Başarılı yanıt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    description: İşlem durumu (true/false)
+                  total:
+                    type: integer
+                    description: Toplam kategori sayısı
+                  categories:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Category'
+              example:
+                status: true
+                total: 2
+                categories:
+                  - id: 1
+                    name: "Gold Paketleri"
+                    isActive: true
+                    parent_id: 0
+                  - id: 2
+                    name: "Premium Paketler"
+                    isActive: true
+                    parent_id: 0
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /categories/{id}:
+    get:
+      tags:
+        - Kategoriler
+      summary: Kategori detayını getir
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Kategori ID'si
+      security:
+        - BasicAuth: []
+      responses:
+        '200':
+          description: Başarılı yanıt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    description: İşlem durumu (true/false)
+                  category:
+                    $ref: '#/components/schemas/Category'
+              example:
+                status: true
+                category:
+                  id: 1
+                  name: "Gold Paketleri"
+                  isActive: true
+                  parent_id: 0
+                  children:
+                    - id: 1
+                      name: "Gold Paketleri"
+                      isActive: true
+                      parent_id: 1
+                      children: []
+                    - id: 2
+                      name: "Premium Paketler"
+                      isActive: true
+                      parent_id: 1
+                      children: []
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: Kategori bulunamadı
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                  message:
+                    type: string
+              example:
+                status: false
+                message: "Belirtilen ID'ye sahip kategori bulunamadı"
+        '500':
+          description: Sunucu hatası
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                  message:
+                    type: string
+              example:
+                status: false
+                message: "Kategori detayı alınırken bir hata oluştu"
+
+  /purchase:
+    post:
+      tags:
+        - Satın Alma
+      summary: Ürün satın al
+      description: |
+        Bu endpoint, belirtilen ürünü satın almanızı sağlar. Satın alma işlemi kullanıcının mevcut bakiyesinden düşülür.
+        
+        ### Kullanım Örneği (PHP)
+        ```php
+        $email = 'kullanici@email.com';
+        $password = 'sifre';
+        $credentials = base64_encode($email . ':' . $password);
+        
+        $data = array(
+            'product_id' => 1,
+            'quantity' => 2
+        );
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "{{API_URL}}/purchase");
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'Authorization: Basic ' . $credentials
+        ));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+        $response = curl_exec($ch);
+        curl_close($ch);
+        $result = json_decode($response, true);
+        if ($result['status']) {
+            echo "Satın alma başarılı. Sipariş ID: " . $result['order_id'];
+        } else {
+            echo "Hata: " . $result['message'];
+        }
+        ```
+        
+        ## Callback URL
+        Eğer sipariş stok yetersizliği veya başka bir nedenle başarısız olur ve pending durumunda kalırsa, belirtilen callback_url adresine POST isteği yapılır.
+        
+        ### Callback URL Örneği (PHP)
+        ```php
+        $data = json_decode(file_get_contents('php://input'), true);
+        if ($data['status'] === "cancelled") {
+            echo "Sipariş iptal edildi";
+            return;
+        }
+        $delivery_id = $data['delivery_id']; // Sisteminize özgü teslimat ID'si
+        $status = $data['status']; // Sipariş durumu (completed/cancelled)
+        $code = $data['code']; // Teslim edilen kod
+        $processed_at = $data['processed_at']; // İşlem tarihi
+        ```
+
+      security:
+        - BasicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                delivery_id:
+                  type: integer
+                  description: Sisteminize özgü teslimat ID'si
+                product_id:
+                  type: integer
+                  description: Satın alınacak ürünün ID'si
+                quantity:
+                  type: integer
+                  description: Satın alınacak ürün miktarı
+                callback_url:
+                  type: string
+                  description: Sipariş durumu değiştiğinde bildirim yapılacak URL
+                required_fields:
+                  type: object
+                  description: Ürün için gerekli olan ek bilgiler
+              required:
+                - delivery_id
+                - product_id
+                - quantity
+            example:
+              delivery_id: "XYZ123"
+              product_id: 1
+              quantity: 2
+              callback_url: "https://example.com/callback"
+              required_fields:
+                username: "oyuncu123"
+                server: "EU"
+      responses:
+        '200':
+          description: Başarılı satın alma
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    description: İşlem durumu (true/false)
+                  message:
+                    type: string
+                    description: İşlem sonucu mesajı
+                  order_id:
+                    type: string
+                    description: Oluşturulan sipariş ID'si
+                  delivery_status:
+                    type: string
+                    enum: [pending, completed]
+                    description: Siparişin teslimat durumu
+              examples:
+                pending:
+                  value:
+                    status: true
+                    message: "Satın alma beklemede"
+                    order_id: "ORD123456"
+                    delivery_status: "pending"
+                completed:
+                  value:
+                    status: true
+                    message: "Satın alma başarılı"
+                    order_id: "ORD123456"
+                    delivery_status: "completed"
+        '400':
+          description: Geçersiz istek
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                  message:
+                    type: string
+                  required_fields:
+                    type: array
+                    items:
+                      type: string
+                    description: Eksik olan zorunlu alanlar
+              examples:
+                invalid_request:
+                  value:
+                    status: false
+                    message: "Geçersiz ürün ID'si veya miktar"
+                missing_fields:
+                  value:
+                    status: false
+                    message: "Required fields are missing"
+                    required_fields: ["username", "server"]
+                insufficient_balance:
+                  value:
+                    status: false
+                    message: "Yetersiz bakiye"
+
+  /check_order/{order_id}:
+    get:
+      tags:
+        - Satın Alma
+      summary: Sipariş durumunu kontrol et
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Sipariş ID'si
+      security:
+        - BasicAuth: []
+      responses:
+        '200':
+          description: Başarılı yanıt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                  order_id:
+                    type: string
+                  delivery_status:
+                    type: string
+                    enum: [pending, completed]
+                  delivery_details:
+                    type: string
+                    description: Teslim edilen ürün detayları (sadece completed durumunda)
+              examples:
+                pending:
+                  value:
+                    status: true
+                    order_id: "ORD123"
+                    delivery_status: "pending"
+                completed:
+                  value:
+                    status: true
+                    order_id: "ORD123"
+                    delivery_status: "completed"
+                    delivery_details: "Ürün detayları..."
+        '404':
+          description: Sipariş bulunamadı
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                  message:
+                    type: string
+              example:
+                status: false
+                message: "Sipariş bulunamadı"
+        '500':
+          description: Sunucu hatası
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                  message:
+                    type: string
+              example:
+                status: false
+                message: "Sipariş durumu bilinmiyor"
+
+components:
+  schemas:
+    Product:
+      type: object
+      required:
+        - id
+        - name
+        - price
+        - isActive
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        price:
+          type: number
+          format: float
+        description:
+          type: string
+        isActive:
+          type: boolean
+        category_id:
+          type: integer
+        category_name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        img:
+          type: string
+        background_img:
+          type: string
+        desc:
+          type: string
+        text:
+          type: string
+        required_fields:
+          type: array
+          items:
+            type: string
+
+    Category:
+      type: object
+      required:
+        - id
+        - name
+        - isActive
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        isActive:
+          type: boolean
+        parent_id:
+          type: integer
+        product_count:
+          type: integer
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+  responses:
+    UnauthorizedError:
+      description: Kimlik doğrulama bilgileri eksik veya geçersiz
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                type: boolean
+              message:
+                type: string
+          example:
+            status: false
+            message: "Kimlik doğrulama başarısız"
+
+    ForbiddenError:
+      description: IP adresi izin verilmeyen listede
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                type: boolean
+              message:
+                type: string
+          example:
+            status: false
+            message: "Bu IP adresinden erişime izin verilmiyor"
+
+
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+      description: |
+        API kimlik doğrulaması için Basic Authentication kullanılmaktadır. 
+        Authorization header'ında e-posta ve şifrenizin base64 ile kodlanmış halini göndermelisiniz.
+
+        Örnek:
+        Authorization: Basic base64(email:password)
+
+security:
+  - BasicAuth: []
