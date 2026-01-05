@@ -16,12 +16,15 @@ if not exist ".git" (
     git branch -M main
 )
 
+REM Önce GitHub'dan değişiklikleri çek (pull)
+git pull origin main --allow-unrelated-histories --no-edit 2>nul
+
 REM Değişiklikleri ekle ve commit et
 git add .
 git commit -m "Otomatik güncelleme - %date% %time%" 2>nul
 
 REM Push et
-git push -u origin main
+git push origin main
 
 echo.
 echo ✅ Değişiklikler GitHub'a yüklendi!

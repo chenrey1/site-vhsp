@@ -1,4 +1,11 @@
+<<<<<<< HEAD
 Bu dosya otomatik deployment testi için oluşturuldu.
 Tarih: 2026-01-05
 Test başarılı! 🎉
 
+=======
+   Bu dosya otomatik deployment testi için oluşturuldu.
+   Tarih: 2026-01-05
+   Test başarılı! 🎉
+satır eklendi
+>>>>>>> 7b313731b6a21d2db48f6d26ce6885c7942eb516
